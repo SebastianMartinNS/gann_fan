@@ -5,6 +5,23 @@
 
 Modulo Python completo e robusto per il calcolo, la costruzione e la visualizzazione del **ventaglio di Gann** (Gann Fan), con rigorosa attenzione alla correttezza matematica, ripetibilità dei risultati e qualità del codice.
 
+## Esempi Visivi
+
+### Pivot Low con ATR
+![Gann Fan - Last Low](coinbase_btc_eur_15min_last_low.png)
+
+Ventaglio di Gann costruito dall'ultimo pivot low rilevato automaticamente. Le linee verdi rappresentano i ratios di supporto (1/8, 1/4, 1/2, 1, 2, 4, 8) proiettati in avanti usando il Price Per Bar calcolato dall'ATR.
+
+### Pivot High con ATR
+![Gann Fan - Last High](coinbase_btc_eur_15min_last_high.png)
+
+Ventaglio di Gann costruito dall'ultimo pivot high. Le linee rosse rappresentano i ratios di resistenza proiettati verso il basso dal massimo rilevato.
+
+### Confronto Multiple Timeframes
+![Gann Fan - Multiple Fans](coinbase_btc_eur_15min_multiple_fans.png)
+
+Sovrapposizione di tre ventagli con diversi parametri PPB (narrow, medium, wide) per analizzare multiple velocità di movimento del prezzo. Utile per identificare zone di confluenza tra diversi timeframes.
+
 ## Caratteristiche
 
 - ✅ **Calcolo matematicamente rigoroso** dell'Average True Range (ATR) con metodi SMA e Wilder
@@ -21,7 +38,7 @@ Modulo Python completo e robusto per il calcolo, la costruzione e la visualizzaz
 ### Da sorgente
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/SebastianMartinNS/gann_fan.git
 cd gann_fan
 pip install -e .
 ```
@@ -426,9 +443,9 @@ I contributi sono benvenuti! Per favore:
 3. Segui PEP8 e usa type hints
 4. Aggiorna la documentazione
 
-## Autori
+## Autore
 
-Gann Fan Project
+Sebastian Martin - [@SebastianMartinNS](https://github.com/SebastianMartinNS)
 
 ## Note tecniche
 
@@ -474,5 +491,3 @@ Il ppb (Price Per Bar) determina lo scaling verticale.
 ---
 
 **Buon trading con il ventaglio di Gann! 📈**
-#   g a n n _ f a n  
- 
