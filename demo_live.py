@@ -39,9 +39,9 @@ def main():
     
     print(f"\n✅ Dati validi: {msg}\n")
     
-    # Test 1: Ventaglio da ultimo pivot low
+    # Test 1: Ventaglio da ultimo pivot low (CRYPTO-ADAPTED)
     print("=" * 70)
-    print("TEST 1: Ventaglio da Pivot Low (ATR)")
+    print("TEST 1: Ventaglio da Pivot Low - PPB Dinamico Crypto")
     print("=" * 70)
     
     try:
@@ -51,9 +51,10 @@ def main():
             pivot_mode="atr",
             atr_len=14,
             atr_mult=1.5,
-            atr_method="sma",
-            ppb_mode="ATR",
-            atr_divisor=2.0,
+            atr_method="ema",       # EMA per crypto (più reattivo)
+            use_dynamic_ppb=True,   # PPB adattivo (NUOVO)
+            base_divisor=2.0,
+            volatility_window=50,   # Finestra volatilità dinamica
             ratios=[1/8, 1/4, 1/2, 1, 2, 4, 8],  # Ratios classici
             bars_forward=100
         )
@@ -69,8 +70,8 @@ def main():
         fig, ax = plt.subplots(figsize=(16, 9))
         plot_fan_with_date(df, fan, date_col="Date", ax=ax, show_labels=True)
         ax.set_title(
-            f"Gann Fan BTC/EUR 15min - Pivot Low\n"
-            f"Pivot @ {fan.pivot_price:.2f} EUR | PPB: {fan.ppb:.2f}",
+            f"Gann Fan BTC/EUR 15min - Pivot Low (Crypto-Adapted)\n"
+            f"Pivot @ {fan.pivot_price:.2f} EUR | PPB Dinamico: {fan.ppb:.2f}",
             fontsize=14,
             fontweight="bold"
         )
@@ -85,20 +86,21 @@ def main():
         traceback.print_exc()
         return
     
-    # Test 2: Ventaglio da ultimo pivot high
+    # Test 2: Ventaglio da ultimo pivot high (CRYPTO-ADAPTED)
     print("\n" + "=" * 70)
-    print("TEST 2: Ventaglio da Pivot High (ATR)")
+    print("TEST 2: Ventaglio da Pivot High - PPB Statico vs Dinamico")
     print("=" * 70)
     
     try:
         fan = gann_fan(
             df,
             pivot_source="last_high",
-            pivot_mode="atr",       # Cambiato da percent ad atr
+            pivot_mode="atr",
             atr_len=14,
-            atr_mult=1.0,           # Ridotto per 24h
-            ppb_mode="ATR",
-            atr_divisor=1.5,
+            atr_mult=1.0,
+            atr_method="ema",
+            use_dynamic_ppb=False,  # PPB statico per confronto
+            base_divisor=1.5,
             ratios=[1/4, 1/2, 1, 2, 4],
             bars_forward=100
         )
@@ -114,8 +116,8 @@ def main():
         fig, ax = plt.subplots(figsize=(16, 9))
         plot_fan_with_date(df, fan, date_col="Date", ax=ax, show_labels=True)
         ax.set_title(
-            f"Gann Fan BTC/EUR 15min - Pivot High\n"
-            f"Pivot @ {fan.pivot_price:.2f} EUR | PPB: {fan.ppb:.2f}",
+            f"Gann Fan BTC/EUR 15min - Pivot High (Crypto-Adapted)\n"
+            f"Pivot @ {fan.pivot_price:.2f} EUR | PPB Statico: {fan.ppb:.2f}",
             fontsize=14,
             fontweight="bold"
         )

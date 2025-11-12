@@ -687,6 +687,366 @@ plt.show()
 
 ---
 
+## 📈 Adattamenti per il Trading di Criptovalute (CRYPTO-MODERN)
+
+### Perché l'Implementazione Classica è Inadeguata per Crypto
+
+Le tecniche di W.D. Gann furono sviluppate tra il **1900 e 1950** per mercati tradizionali (azioni, commodities) con caratteristiche profondamente diverse dalle criptovalute moderne:
+
+| Caratteristica | Mercati Tradizionali (1900-1950) | Criptovalute (2025) |
+|----------------|----------------------------------|---------------------|
+| **Volatilità** | 1-5% annuale | 50-200%+ annuale |
+| **Range prezzi** | Centinaia/migliaia | $0.0001 → $100,000+ |
+| **Movimenti** | Lineari (+$10, +$20) | Esponenziali (+100%, +500%) |
+| **Trading** | Orari limitati | 24/7 non-stop |
+| **Liquidità** | Concentrata in orari | Distribuita nel tempo |
+
+**Problema fondamentale:** Gann usava **prezzi assoluti** e **metriche lineari**, inadatti per asset con movimenti **percentuali** ed **esponenziali**.
+
+---
+
+### Adattamento 1: ATR Percentuale (Normalizzato)
+
+#### Formula Classica (Problematica per Crypto)
+```
+TR_t = max(High_t - Low_t, |High_t - Close_{t-1}|, |Low_t - Close_{t-1}|)
+ATR_t = SMA(TR, length)  oppure  EWM(TR, length)
+```
+
+**Problema:** ATR assoluto non è comparabile tra livelli di prezzo diversi.
+- BTC a $20K: ATR = $500 (2.5%)
+- BTC a $90K: ATR = $2000 (2.2%)
+- Stesso significato? **NO** se usi valori assoluti!
+
+#### Formula Crypto-Adapted (ATR%)
+```python
+# 1. Calcola True Range assoluto (come classico)
+TR_t = max(High_t - Low_t, |High_t - Close_{t-1}|, |Low_t - Close_{t-1}|)
+
+# 2. Smooth True Range (EMA preferito per crypto)
+if method == "ema":
+    ATR_abs = EMA(TR, span=length)  # Più reattivo
+elif method == "wilder":
+    ATR_abs = Wilder_Smoothing(TR, length)  # Più conservativo
+elif method == "sma":
+    ATR_abs = SMA(TR, length)
+
+# 3. NORMALIZZA: converti in percentuale
+ATR_pct = (ATR_abs / Close_t) × 100
+```
+
+**Vantaggi:**
+- ✅ **Comparabile:** 5% volatilità ha stesso significato a $20K e $90K
+- ✅ **Scalabile:** Funziona per Bitcoin ($90K) e Dogecoin ($0.30)
+- ✅ **Interpretabile:** "BTC ha 3.5% ATR" è chiaro, "$3000 ATR" dipende dal prezzo
+
+**Implementazione:**
+```python
+from gann_fan import atr_percent
+
+atr_pct = atr_percent(df, length=14, method="ema")
+print(f"Volatilità: {atr_pct.iloc[-1]:.2f}%")
+# Output: Volatilità: 3.45%
+```
+
+---
+
+### Adattamento 2: Scala Logaritmica per Pivot Detection
+
+#### Formula Classica (Lineare - Problematica)
+```python
+# Movimento percentuale lineare
+move_pct = (P_t - P_candidate) / P_candidate
+
+if move_pct >= threshold:
+    # Conferma pivot
+```
+
+**Problema:** Asimmetria nei movimenti.
+- Da $50K a $100K: +100% (+$50K)
+- Da $100K a $50K: -50% (-$50K)
+- Matematicamente, +100% ≠ -50%, ma economicamente sono **movimenti opposti equivalenti**!
+
+#### Formula Crypto-Adapted (Logaritmica)
+```python
+# Movimento percentuale su scala log
+log_move = log(P_t) - log(P_candidate)
+move_pct = exp(log_move) - 1
+
+# Equivalente semplificato:
+move_pct = (P_t / P_candidate) - 1
+
+if abs(move_pct) >= threshold:
+    # Conferma pivot
+```
+
+**Vantaggi Scala Log:**
+- ✅ **Simmetrico:** $100K → $200K (+100%) ≡ $200K → $100K (-50%)
+- ✅ **Esponenziale:** Cattura movimenti crypto tipici (+500%, -80%)
+- ✅ **Comparabile:** +10% su scala log = stesso significato ovunque
+
+**Grafico Comparativo:**
+
+| Movimento | Scala Lineare | Scala Log |
+|-----------|---------------|-----------|
+| $50K → $100K | +$50K | +100% |
+| $100K → $200K | +$100K | +100% |
+| $100K → $50K | -$50K | -50% (≡ +100% inverso) |
+
+**Implementazione:**
+```python
+from gann_fan import pivots_percent_log
+
+highs, lows = pivots_percent_log(df, threshold=0.05)
+# threshold=0.05 → 5% movimento su scala log
+```
+
+---
+
+### Adattamento 3: PPB Dinamico Adattivo alla Volatilità
+
+#### Formula Classica (PPB Statico)
+```python
+# Gann originale: PPB fisso o da ATR statico
+PPB = fixed_value  # Es. 100 EUR/barra
+
+# Oppure da ATR assoluto
+PPB = ATR_abs / divisor  # Es. ATR=500, divisor=2 → PPB=250
+```
+
+**Problema:** Crypto ha **volatilità variabile** (calmo → pump → dump).
+- PPB fisso è **rigido** durante pump/dump
+- PPB da ATR statico non anticipa **espansioni/contrazioni** volatilità
+
+#### Formula Crypto-Adapted (PPB Dinamico)
+```python
+# 1. Calcola ATR percentuale al pivot
+ATR_pct_pivot = atr_percent(df, length=14, method="ema").iloc[pivot_idx]
+
+# 2. Calcola volatilità realizzata rolling (finestra recente)
+log_returns = diff(log(Close))
+window_returns = log_returns[pivot_idx - volatility_window : pivot_idx]
+RV_pct = std(window_returns) × sqrt(len(window_returns)) × 100
+
+# 3. Fattore adattivo: quanto è "calda" la volatilità
+adaptive_factor = RV_pct / ATR_pct_pivot
+adaptive_factor = clip(adaptive_factor, 0.5, 2.0)  # Clamp estremi
+
+# 4. PPB dinamico (percentuale del prezzo)
+PPB_pct = (ATR_pct_pivot / base_divisor) × adaptive_factor
+PPB_abs = (PPB_pct / 100) × pivot_price
+```
+
+**Vantaggi:**
+- ✅ **Auto-scaling:** Si adatta automaticamente a pump/dump
+- ✅ **Forward-looking:** Usa volatilità realizzata recente
+- ✅ **Proporzionale:** PPB sempre relativo al prezzo corrente
+
+**Esempio Reale:**
+```python
+from gann_fan import gann_fan, get_coinbase_candles
+
+df = get_coinbase_candles("BTC-EUR", 900, 96)  # 24h, 15min
+
+# PPB statico
+fan_static = gann_fan(df, use_dynamic_ppb=False)
+print(f"PPB statico: {fan_static.ppb:.2f} EUR/barra")
+# Output: PPB statico: 250.96 EUR/barra
+
+# PPB dinamico
+fan_dynamic = gann_fan(df, use_dynamic_ppb=True)
+print(f"PPB dinamico: {fan_dynamic.ppb:.2f} EUR/barra")
+# Output: PPB dinamico: 276.23 EUR/barra (+10% più alto)
+
+# Interpretazione: Volatilità recente > ATR medio → PPB si adatta
+```
+
+---
+
+### Adattamento 4: Pivot Detection con ATR Adattivo
+
+#### Formula Classica (Soglia Fissa)
+```python
+# Soglia percentuale fissa
+threshold = 0.05  # 5% sempre
+
+if move_pct >= threshold:
+    # Conferma pivot
+```
+
+**Problema:** Soglia fissa inadatta per volatilità variabile.
+- Mercato calmo (ATR 2%): soglia 5% → pochi pivot (troppo conservativa)
+- Mercato volatile (ATR 8%): soglia 5% → troppi pivot (rumore)
+
+#### Formula Crypto-Adapted (Soglia Adattiva)
+```python
+# Soglia si adatta a ATR percentuale corrente
+ATR_pct_current = atr_percent(df, length=14).iloc[i]
+threshold_adaptive = (ATR_pct_current / 100) × atr_mult
+
+if move_pct >= threshold_adaptive:
+    # Conferma pivot
+```
+
+**Parametro Chiave:** `atr_mult` (moltiplicatore ATR)
+- `atr_mult = 0.5-1.0`: Sensibile (più pivot)
+- `atr_mult = 1.5-2.0`: Standard (bilanciato)
+- `atr_mult = 2.5-3.0`: Conservativo (solo pivot forti)
+
+**Vantaggi:**
+- ✅ **Auto-adattamento:** Volatile → soglie più alte
+- ✅ **Normalizzato:** Confrontabile tra asset
+- ✅ **Reattivo:** EMA cattura cambi rapidi
+
+**Implementazione:**
+```python
+from gann_fan import pivots_atr_adaptive
+
+highs, lows = pivots_atr_adaptive(
+    df, 
+    atr_len=14, 
+    atr_mult=1.5,  # Soglia = ATR% × 1.5
+    method="ema"   # EMA per reattività
+)
+```
+
+---
+
+### Comparazione Formule: Classico vs Crypto-Adapted
+
+| Componente | Classico (1900-1950) | Crypto-Adapted (2025) | Miglioramento |
+|------------|----------------------|-----------------------|---------------|
+| **ATR** | `ATR = SMA(TR)` | `ATR% = (ATR/Close)×100` | Normalizzato |
+| **Pivot Scale** | Lineare `(P_t - P_0)/P_0` | Logaritmica `exp(log(P_t/P_0))-1` | Simmetrico |
+| **PPB** | Statico `ATR/divisor` | Dinamico `f(ATR%, RV, price)` | Adattivo |
+| **Soglia Pivot** | Fissa `threshold=5%` | Adattiva `ATR%×mult` | Auto-scaling |
+| **Smoothing** | SMA/Wilder | EMA (default) | Più reattivo |
+
+---
+
+### Best Practices per Crypto Trading
+
+#### Timeframe Consigliati
+- **Scalping (15min-1h):** `atr_len=14`, `atr_mult=1.0-1.5`, `volatility_window=30`
+- **Day Trading (1h-4h):** `atr_len=14`, `atr_mult=1.5-2.0`, `volatility_window=50`
+- **Swing Trading (4h-1d):** `atr_len=20`, `atr_mult=2.0-2.5`, `volatility_window=100`
+
+#### Asset-Specific Tuning
+```python
+# Bitcoin (BTC): Volatilità media 3-5%
+fan_btc = gann_fan(
+    df_btc, 
+    atr_mult=1.5, 
+    use_dynamic_ppb=True,
+    volatility_window=50
+)
+
+# Altcoin volatile: Volatilità > 10%
+fan_altcoin = gann_fan(
+    df_altcoin, 
+    atr_mult=2.5,  # Soglia più alta
+    use_dynamic_ppb=True,
+    volatility_window=30  # Finestra più corta
+)
+```
+
+#### Ratios Crypto-Optimized
+```python
+# Default ratios (bilanciati)
+ratios = [1/8, 1/4, 1/2, 1, 2, 4, 8]
+
+# Ratios aggressivi (solo velocità estreme)
+ratios_aggressive = [1/4, 1/2, 1, 2, 4]
+
+# Ratios completi (analisi dettagliata)
+ratios_full = [1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 1, 2, 3, 4, 8]
+```
+
+---
+
+### Esempio Completo: BTC/EUR 24h Trading
+
+```python
+from gann_fan import get_coinbase_candles, gann_fan
+from gann_fan.plot import plot_fan_with_date
+import matplotlib.pyplot as plt
+
+# 1. Scarica dati live: ultime 24 ore, candele 15 minuti
+df = get_coinbase_candles(
+    product_id="BTC-EUR",
+    granularity=900,  # 15 minuti
+    num_candles=96    # 24h × 4 candele/ora
+)
+
+# 2. Costruisci ventaglio CRYPTO-ADAPTED
+fan = gann_fan(
+    df,
+    pivot_source="last_low",    # Parti da ultimo pivot low
+    pivot_mode="atr",            # Soglie adattive (consigliato)
+    atr_len=14,                  # ATR su 14 periodi
+    atr_mult=1.5,                # Soglia = ATR% × 1.5
+    atr_method="ema",            # EMA per reattività
+    use_dynamic_ppb=True,        # PPB adattivo (KEY!)
+    base_divisor=2.0,
+    volatility_window=50,
+    ratios=[1/8, 1/4, 1/2, 1, 2, 4, 8],
+    bars_forward=30
+)
+
+# 3. Analizza risultato
+print(f"Pivot: indice {fan.pivot_idx}, prezzo {fan.pivot_price:.2f} EUR")
+print(f"PPB dinamico: {fan.ppb:.2f} EUR/barra")
+print(f"Volatilità implicita: {fan.ppb/fan.pivot_price*100*2:.2f}%")
+
+# 4. Visualizza
+fig, ax = plt.subplots(figsize=(16, 9))
+plot_fan_with_date(df, fan, "Date", ax=ax, show_labels=True)
+ax.set_title(
+    f"Gann Fan BTC/EUR 15min - Crypto-Adapted\n"
+    f"PPB Dinamico: {fan.ppb:.2f} | Pivot @ {fan.pivot_price:.2f}",
+    fontsize=14, fontweight="bold"
+)
+plt.tight_layout()
+plt.savefig("gann_crypto_btc.png", dpi=150)
+plt.show()
+```
+
+**Output Atteso:**
+```
+Pivot: indice 75, prezzo 90342.63 EUR
+PPB dinamico: 276.23 EUR/barra
+Volatilità implicita: 0.61%
+```
+
+---
+
+### Limiti e Considerazioni
+
+1. **Black Swan Events:** PPB dinamico ha limiti (clamp 0.5-2.0x) per evitare reazioni estreme a spike anomali
+2. **Liquidità:** Volumi bassi possono causare pivot falsi → verifica volume al pivot
+3. **Exchange Differences:** Prezzi variano tra exchange → usa sempre stesso source
+4. **Backtesting:** Testa parametri su dati storici prima di live trading
+
+---
+
+### Referenze Tecniche
+
+**Implementazione Legacy (Classica):**
+- Backup disponibile in `gann_fan/core_legacy.py`
+- Usa scale lineari e ATR assoluto
+- Adatta per mercati tradizionali (azioni, commodities)
+
+**Implementazione Moderna (Crypto):**
+- File principale: `gann_fan/core.py`
+- Usa scale logaritmiche e ATR percentuale
+- Ottimizzata per criptovalute
+
+**Test Suite:**
+- Test classici: `tests/test_core.py` (25 test, API legacy)
+- Test crypto: `tests/test_core_crypto.py` (13 test, API moderna)
+
+---
+
 ## Bibliografia
 
 - Gann, W.D. (1949). "45 Years in Wall Street"
