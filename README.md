@@ -7,20 +7,45 @@ Modulo Python completo e robusto per il calcolo, la costruzione e la visualizzaz
 
 ## Esempi Visivi
 
-### Pivot Low con ATR
+Esempi reali su dati **BTC/EUR** con candele da **15 minuti** scaricati dall'API pubblica di Coinbase.
+
+### Test 1: Pivot Low Automatico (ATR)
 ![Gann Fan - Last Low](coinbase_btc_eur_15min_last_low.png)
 
-Ventaglio di Gann costruito dall'ultimo pivot low rilevato automaticamente. Le linee verdi rappresentano i ratios di supporto (1/8, 1/4, 1/2, 1, 2, 4, 8) proiettati in avanti usando il Price Per Bar calcolato dall'ATR.
+**Configurazione:**
+- Pivot source: `last_low` (rilevato automaticamente con ATR)
+- Pivot rilevato: indice 478, prezzo **89,036.49 EUR** (12 Nov 2025, 07:45)
+- ATR: periodo 14, moltiplicatore 1.5, metodo SMA
+- PPB: **81.31** (ATR ÷ 2.0)
+- Ratios: 1/8, 1/4, 1/2, 1, 2, 4, 8
+- Direzione: **UP** (linee verdi - supporti dinamici)
 
-### Pivot High con ATR
+Il ventaglio parte dall'ultimo minimo significativo e proietta 7 linee di supporto verso l'alto. Ogni linea rappresenta una potenziale zona di supporto con diversa angolazione (velocità di salita).
+
+### Test 2: Pivot High Automatico (Percentuale)
 ![Gann Fan - Last High](coinbase_btc_eur_15min_last_high.png)
 
-Ventaglio di Gann costruito dall'ultimo pivot high. Le linee rosse rappresentano i ratios di resistenza proiettati verso il basso dal massimo rilevato.
+**Configurazione:**
+- Pivot source: `last_high` (rilevato con soglia percentuale 3%)
+- Pivot rilevato: indice 363, prezzo **92,427.40 EUR** (11 Nov 2025, 03:00)
+- PPB: **260.17** (ATR periodo 20 ÷ 1.5)
+- Ratios: 1/4, 1/2, 1, 2, 4
+- Direzione: **DOWN** (linee rosse - resistenze dinamiche)
 
-### Confronto Multiple Timeframes
+Il ventaglio parte dall'ultimo massimo significativo e proietta 5 linee di resistenza verso il basso. Queste linee rappresentano potenziali zone di resistenza durante una fase di correzione.
+
+### Test 3: Confronto PPB Multipli
 ![Gann Fan - Multiple Fans](coinbase_btc_eur_15min_multiple_fans.png)
 
-Sovrapposizione di tre ventagli con diversi parametri PPB (narrow, medium, wide) per analizzare multiple velocità di movimento del prezzo. Utile per identificare zone di confluenza tra diversi timeframes.
+**Configurazione:**
+- Pivot: stesso del Test 1 (idx 478, 89,036.49 EUR)
+- Tre ventagli sovrapposti con PPB diversi:
+  - **Blu (Narrow)**: PPB = 54.21 (ATR ÷ 3.0) - linee più ripide
+  - **Verde (Medium)**: PPB = 81.31 (ATR ÷ 2.0) - angolazione media
+  - **Arancione (Wide)**: PPB = 162.63 (ATR ÷ 1.0) - linee più piatte
+- Ratios: 1, 2 (solo ratio principali per chiarezza)
+
+Questo esempio mostra come lo stesso pivot può generare ventagli con diverse "velocità" di movimento. Le zone dove le linee si sovrappongono o si incrociano rappresentano aree di particolare interesse tecnico (confluenze).
 
 ## Caratteristiche
 
