@@ -302,23 +302,23 @@ def test_gann_with_real_data():
             
             print(f"  Pivot selezionato: idx={pivot_idx}, price={pivot_price:.2f}")
             
-            # Tre ventagli con PPB diversi - bars_forward ridotto
+            # Tre ventagli con PPB diversi e ratios multipli per maggiore visibilità
             fan_narrow = gann_fan(
                 df, pivot_source="custom", custom_pivot=(pivot_idx, pivot_price),
                 ppb_mode="ATR", atr_len=14, atr_divisor=3.0,
-                ratios=[1, 2], bars_forward=50
+                ratios=[1/2, 1, 2], bars_forward=50
             )
             
             fan_medium = gann_fan(
                 df, pivot_source="custom", custom_pivot=(pivot_idx, pivot_price),
                 ppb_mode="ATR", atr_len=14, atr_divisor=2.0,
-                ratios=[1, 2], bars_forward=50
+                ratios=[1/2, 1, 2], bars_forward=50
             )
             
             fan_wide = gann_fan(
                 df, pivot_source="custom", custom_pivot=(pivot_idx, pivot_price),
                 ppb_mode="ATR", atr_len=14, atr_divisor=1.0,
-                ratios=[1, 2], bars_forward=50
+                ratios=[1/2, 1, 2], bars_forward=50
             )
             
             print(f"  PPB narrow: {fan_narrow.ppb:.4f}")
@@ -341,21 +341,24 @@ def test_gann_with_real_data():
             ax.scatter([df.iloc[pivot_idx]["Date"]], [pivot_price], 
                       color="red", s=150, zorder=5, label=f"Pivot @ {pivot_price:.2f}")
             
-            # Ventagli con colori diversi
+            # Ventagli con colori e stili diversi per massima distinguibilità
             colors = ["blue", "green", "orange"]
-            alphas = [0.6, 0.7, 0.8]
+            alphas = [0.8, 0.8, 0.8]
             labels = ["Narrow (÷3)", "Medium (÷2)", "Wide (÷1)"]
-            linewidths = [2.0, 2.0, 2.0]
+            linewidths = [2.5, 2.5, 2.5]
+            linestyles = [(0, (5, 2)), (0, (3, 1, 1, 1)), (0, (1, 1))]  # Dash patterns diversi
             
-            for fan, color, alpha, label, lw in zip([fan_narrow, fan_medium, fan_wide], colors, alphas, labels, linewidths):
+            for fan, color, alpha, label, lw, ls in zip([fan_narrow, fan_medium, fan_wide], colors, alphas, labels, linewidths, linestyles):
+                line_count = 0
                 for line in fan.lines:
-                    # Disegna tutte le linee del ventaglio, anche se escono dalla finestra
+                    # Disegna tutte le linee del ventaglio
                     x = [df.iloc[line.start_idx]["Date"], df.iloc[line.end_idx]["Date"]]
                     y = [line.y0, line.y1]
-                    ax.plot(x, y, color=color, linestyle="--", linewidth=lw, alpha=alpha)
+                    ax.plot(x, y, color=color, linestyle=ls, linewidth=lw, alpha=alpha)
+                    line_count += 1
                 
-                # Label solo per una linea
-                ax.plot([], [], color=color, linestyle="--", linewidth=lw+0.5, label=f"Fan {label}")
+                # Label con conteggio linee
+                ax.plot([], [], color=color, linestyle=ls, linewidth=lw, label=f"Fan {label} ({line_count} linee)")
             
             ax.set_xlabel("Date", fontsize=12)
             ax.set_ylabel("Price (EUR)", fontsize=12)

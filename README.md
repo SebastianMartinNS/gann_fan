@@ -53,6 +53,7 @@ Questo esempio mostra come lo stesso pivot può generare ventagli con diverse "v
 - ✅ **Rilevamento deterministico dei pivot** con metodi percentuali e basati su ATR
 - ✅ **Costruzione completa del ventaglio di Gann** con ratios configurabili
 - ✅ **Visualizzazione professionale** con matplotlib
+- ✅ **Acquisizione dati reali** da Coinbase Public API integrata
 - ✅ **API pulita** con type hints completi e docstring NumPy-style
 - ✅ **Test automatizzati** per tutte le funzioni principali
 - ✅ **Interfaccia a riga di comando** per elaborazione batch
@@ -76,15 +77,45 @@ pip install -e ".[dev]"
 
 ## Utilizzo
 
-### Come libreria Python
+### Con dati reali da Coinbase (LIVE)
 
 ```python
-import pandas as pd
-from gann_fan.core import gann_fan
+from gann_fan import get_coinbase_candles, gann_fan
 from gann_fan.plot import plot_fan_with_date
 import matplotlib.pyplot as plt
 
-# Carica dati
+# Scarica dati BTC/EUR 15 minuti
+df = get_coinbase_candles(
+    product_id="BTC-EUR",
+    granularity=900,  # 15 minuti
+    num_candles=500
+)
+
+# Calcola ventaglio da ultimo pivot low
+fan = gann_fan(
+    df,
+    pivot_source="last_low",
+    pivot_mode="atr",
+    atr_len=14,
+    atr_mult=1.5,
+    ratios=[1/8, 1/4, 1/2, 1, 2, 4, 8],
+    bars_forward=100
+)
+
+# Visualizza
+plot_fan_with_date(df, fan, date_col="Date")
+plt.show()
+```
+
+### Come libreria Python (dati personalizzati)
+
+```python
+import pandas as pd
+from gann_fan import gann_fan
+from gann_fan.plot import plot_fan_with_date
+import matplotlib.pyplot as plt
+
+# Carica dati personalizzati
 df = pd.read_csv("BTC_EUR_1h.csv", parse_dates=["Date"])
 df = df.sort_values("Date").reset_index(drop=True)
 
@@ -110,6 +141,13 @@ print(f"Numero linee: {len(fan.lines)}")
 # Visualizza
 ax = plot_fan_with_date(df, fan, date_col="Date", show_labels=True)
 plt.show()
+```
+
+### Demo interattivo
+
+```bash
+# Esegui demo con dati live da Coinbase
+python demo_live.py
 ```
 
 ### Da riga di comando
@@ -245,6 +283,69 @@ dove:
 - `r`: ratio della linea
 - `ppb`: price per bar
 - `t_0`: indice del pivot
+
+---
+
+### Acquisizione dati
+
+#### `get_coinbase_candles(product_id="BTC-EUR", granularity=3600, num_candles=300)`
+
+Scarica dati OHLCV da Coinbase Public API.
+
+**Parametri:**
+- `product_id`: Coppia di trading (es. "BTC-EUR", "ETH-USD", "BTC-USD")
+- `granularity`: Granularità in secondi:
+  - 60: 1 minuto
+  - 300: 5 minuti
+  - 900: 15 minuti
+  - 3600: 1 ora (default)
+  - 21600: 6 ore
+  - 86400: 1 giorno
+- `num_candles`: Numero di candele da scaricare (max ~1000)
+
+**Returns:** DataFrame con colonne: `Date`, `Open`, `High`, `Low`, `Close`, `Volume`
+
+**Esempio:**
+```python
+from gann_fan import get_coinbase_candles
+
+# Scarica 500 candele da 15 minuti di BTC/EUR
+df = get_coinbase_candles("BTC-EUR", granularity=900, num_candles=500)
+```
+
+---
+
+#### `get_available_coinbase_products()`
+
+Ottiene lista prodotti disponibili su Coinbase.
+
+**Returns:** Lista di dizionari con: `id`, `base_currency`, `quote_currency`, `status`
+
+**Esempio:**
+```python
+from gann_fan import get_available_coinbase_products
+
+products = get_available_coinbase_products()
+btc_products = [p for p in products if p['base_currency'] == 'BTC']
+print(f"Trovati {len(btc_products)} prodotti BTC")
+```
+
+---
+
+#### `validate_dataframe(df)`
+
+Valida che un DataFrame sia adatto per l'analisi Gann Fan.
+
+**Returns:** `(is_valid: bool, message: str)`
+
+**Esempio:**
+```python
+from gann_fan import validate_dataframe
+
+is_valid, msg = validate_dataframe(df)
+if not is_valid:
+    print(f"Errore: {msg}")
+```
 
 ---
 

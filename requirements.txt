@@ -1,0 +1,9 @@
+# Dipendenze principali
+pandas>=1.5.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+requests>=2.28.0
+
+# Dipendenze di sviluppo (opzionali)
+# Installa con: pip install -r requirements.txt
+# Per includere dev: pip install -r requirements-dev.txt
