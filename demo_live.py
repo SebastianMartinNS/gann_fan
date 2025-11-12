@@ -20,12 +20,12 @@ def main():
     print("GANN FAN - Analisi con Dati Reali da Coinbase")
     print("=" * 70 + "\n")
     
-    # Scarica dati BTC/EUR 15 minuti
+    # Scarica dati BTC/EUR 15 minuti - ultime 24 ore
     try:
         df = get_coinbase_candles(
             product_id="BTC-EUR",
             granularity=900,  # 15 minuti
-            num_candles=500
+            num_candles=96    # 24 ore × 4 candele/ora
         )
     except Exception as e:
         print(f"\n❌ Errore: {e}")
@@ -87,17 +87,17 @@ def main():
     
     # Test 2: Ventaglio da ultimo pivot high
     print("\n" + "=" * 70)
-    print("TEST 2: Ventaglio da Pivot High (Percentuale)")
+    print("TEST 2: Ventaglio da Pivot High (ATR)")
     print("=" * 70)
     
     try:
         fan = gann_fan(
             df,
             pivot_source="last_high",
-            pivot_mode="percent",
-            threshold=0.03,
+            pivot_mode="atr",       # Cambiato da percent ad atr
+            atr_len=14,
+            atr_mult=1.0,           # Ridotto per 24h
             ppb_mode="ATR",
-            atr_len=20,
             atr_divisor=1.5,
             ratios=[1/4, 1/2, 1, 2, 4],
             bars_forward=100

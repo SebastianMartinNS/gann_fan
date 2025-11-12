@@ -84,11 +84,11 @@ from gann_fan import get_coinbase_candles, gann_fan
 from gann_fan.plot import plot_fan_with_date
 import matplotlib.pyplot as plt
 
-# Scarica dati BTC/EUR 15 minuti
+# Scarica dati BTC/EUR 15 minuti - ultime 24 ore
 df = get_coinbase_candles(
     product_id="BTC-EUR",
     granularity=900,  # 15 minuti
-    num_candles=500
+    num_candles=96    # 24 ore
 )
 
 # Calcola ventaglio da ultimo pivot low
@@ -309,8 +309,11 @@ Scarica dati OHLCV da Coinbase Public API.
 ```python
 from gann_fan import get_coinbase_candles
 
-# Scarica 500 candele da 15 minuti di BTC/EUR
+# Scarica 500 candele da 15 minuti di BTC/EUR (circa 5 giorni)
 df = get_coinbase_candles("BTC-EUR", granularity=900, num_candles=500)
+
+# Oppure ultime 24 ore
+df = get_coinbase_candles("BTC-EUR", granularity=900, num_candles=96)
 ```
 
 ---
